@@ -27,7 +27,9 @@ interface Draw {
 export function Tasks() {
   const { data, update, names, addHistory, go, toast } = useApp();
   const now = Date.now();
-  const [chore, setChore] = useState<string | undefined>(data.chores[0]?.name);
+  const [picked, setChore] = useState<string | undefined>(data.chores[0]?.name);
+  // A deleted chore can't stay selected.
+  const chore = picked && data.chores.some((c) => c.name === picked) ? picked : data.chores[0]?.name;
   const [situation, setSituation] = useState<ChoreSituation>('none');
   const [draw, setDraw] = useState<Draw | null>(null);
   const [newName, setNewName] = useState('');
@@ -136,6 +138,7 @@ export function Tasks() {
               labels={{ none: '冇特別', A: `${names.A} OT／唔舒服`, B: `${names.B} OT／唔舒服`, both: '兩個都癱咗' }}
             />
           </div>
+          {data.chores.length === 0 && <div className="note">家務表空咗，喺下面加返一樣先。</div>}
           <Btn onClick={doDraw} disabled={!chore}>
             裁決！
           </Btn>

@@ -44,6 +44,9 @@ export function buildReasons(args: {
     else if (a && b) out.push('兩個人都接受呢個選項');
     else if (a || b) out.push(`${a ? names.A : names.B} 有投票，另一位冇反對`);
     else out.push('兩個都冇投票，亦冇人否決');
+    if (winner.boosted) {
+      out.push(`${names[winner.boosted.who]} 最近遷就多咗，佢嘅票今次 ×${winner.boosted.multiplier.toFixed(1)}`);
+    }
   }
 
   // 3. Cooldown / history.
@@ -58,6 +61,10 @@ export function buildReasons(args: {
     out.push(`上次係 ${d} 日前`);
   }
 
+  // 3b. Past ratings.
+  if (winner.ratingDowns > 0) out.push(`之前評過 👎，機率已經降到 ×${winner.ratingFactor.toFixed(2)}，都係抽中咗`);
+  else if (winner.ratingUps > 0) out.push('之前評過 👍，機率有少少加成');
+
   // 4. Conditions that actually moved the weight.
   const ups = winner.conditionEffects.filter((e) => e.multiplier > 1);
   const downs = winner.conditionEffects.filter((e) => e.multiplier < 1);
@@ -68,5 +75,5 @@ export function buildReasons(args: {
     out.push('其實唔太啱「' + downs.map((e) => e.answer).join('、') + '」，但轉盤都係揀咗佢');
   }
 
-  return out.slice(0, 4);
+  return out.slice(0, 5);
 }

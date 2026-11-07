@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Mascot } from '../components/Mascot';
 import { Btn, Card, COLORS } from '../components/ui';
-import { CATEGORY_LABEL, RULES } from '../data/rules';
+import { CATEGORY_LABEL, tagsFor } from '../data/rules';
 import { buildReasons } from '../engine/reasons';
 import { useApp } from '../store/AppContext';
 import { useRoundWeights } from './Wheel';
@@ -19,7 +19,7 @@ export function openMaps(query: string) {
 }
 
 export function Result() {
-  const { round, setRound, go, addHistory, names, toast, data, update } = useApp();
+  const { round, setRound, go, addHistory, removeHistory, names, toast, data, update } = useApp();
   const rows = useRoundWeights();
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState('');
@@ -40,9 +40,13 @@ export function Result() {
   const reasons = buildReasons({ category: cat, winner, rows, votes: round.votes, names });
 
   const accept = () => {
-    addHistory({ kind: 'pick', category: cat, option: winner.option });
+    const v = round.votes;
+    const votes = v
+      ? { ...(v.A[winner.option] ? { A: v.A[winner.option] } : {}), ...(v.B[winner.option] ? { B: v.B[winner.option] } : {}) }
+      : undefined;
+    const id = addHistory({ kind: 'pick', category: cat, option: winner.option, ...(votes ? { votes } : {}) });
     setRound((r) => ({ ...r, winner: undefined }));
-    toast(`記低咗：${winner.option}。冷卻期由今日開始計`);
+    toast(`記低咗：${winner.option}`, { label: '撤回', run: () => removeHistory(id) });
     go('home');
   };
 
@@ -52,7 +56,7 @@ export function Result() {
   };
   const othersLeft = rows.filter((r) => r.weight > 0 && r.option !== winner.option).length;
 
-  const isHome = RULES.eat.optionTags[winner.option]?.includes('home');
+  const isHome = tagsFor('eat', winner.option, data.tags).includes('home');
   const alt =
     cat === 'eat'
       ? isHome

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Mascot } from '../components/Mascot';
-import { COLORS, initial } from '../components/ui';
+import { Card, COLORS, initial } from '../components/ui';
+import { compromiseBoost, ledger, pendingRating } from '../engine/fairness';
 import { weeklyScores } from '../engine/chores';
 import { relDay, weekdayLabel } from '../engine/time';
 import type { Category } from '../engine/types';
@@ -61,25 +62,28 @@ const TILES: {
   bg?: string;
 }[] = [
   { key: 'eat', emoji: '🍜', name: '今晚食乜', desc: '秘密投票＋轉盤', tab: 'EAT', shadow: COLORS.pink },
-  { key: 'go', emoji: '🗺️', name: '今日去邊', desc: '天氣、時間、交通', tab: 'GO', shadow: COLORS.yellow },
+  { key: 'go', emoji: '🗺️', name: '今日去邊', desc: '投票＋天氣、交通', tab: 'GO', shadow: COLORS.yellow },
   { key: 'tasks', emoji: '⚖️', name: '邊個負責', desc: '家務公平引擎', tab: 'FAIR', shadow: COLORS.green },
-  { key: 'watch', emoji: '📺', name: '今晚睇乜', desc: '電影、劇集、YouTube', tab: 'WATCH', shadow: COLORS.pink },
+  { key: 'watch', emoji: '📺', name: '今晚睇乜', desc: '投票＋時間、心情', tab: 'WATCH', shadow: COLORS.pink },
   { key: 'custom', emoji: '🎲', name: '自訂決定', desc: '臨時爭議快速建盤', tab: 'CUSTOM', shadow: COLORS.yellow, bg: COLORS.yellow },
   { key: 'lazy', emoji: '😴', name: '今日唔想揀', desc: '答三條，直接出建議', tab: 'LAZY', shadow: COLORS.yellow, bg: COLORS.pink },
 ];
 
 export function Home() {
-  const { data, go, startRound, names } = useApp();
+  const { data, go, startRound, names, updateHistory } = useApp();
   const [poke, setPoke] = useState(0);
   const now = Date.now();
 
   const open = (k: (typeof TILES)[number]['key']) => {
     if (k === 'tasks' || k === 'lazy') return go(k);
     startRound(k);
-    // 食乜 and 自訂 start with a secret vote; 去邊 / 睇乜 start with conditions.
-    go(k === 'eat' || k === 'custom' ? 'vote' : 'cond');
+    // Every wheel starts with the secret vote (skippable) so the 遷就帳簿 can learn.
+    go('vote');
   };
 
+  const l = ledger(data.history, now);
+  const boost = compromiseBoost(l);
+  const toRate = pendingRating(data.history, now);
   const lastPick = data.history.find((h) => h.kind === 'pick');
   const lastEat = data.history.find((h) => h.kind === 'pick' && h.category === 'eat');
   const lastChore = data.history.find((h) => h.kind === 'chore');
@@ -112,6 +116,28 @@ export function Home() {
         </div>
       </div>
 
+      {toRate && (
+        <Card label="食完／玩完點呀？" shadow={COLORS.green}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Mascot mood="please" size={56} />
+            <div style={{ flex: 1, fontWeight: 700 }}>
+              {relDay(toRate.ts, now)}嘅「{toRate.option}」OK 嗎？
+              <div className="note" style={{ fontWeight: 400 }}>
+                👎 會降低佢之後嘅機率，👍 會加少少。
+              </div>
+            </div>
+          </div>
+          <div className="row">
+            <button type="button" className="btn2" onClick={() => updateHistory(toRate.id, (h) => ({ ...h, rating: 'up' }) as typeof h)}>
+              👍 好
+            </button>
+            <button type="button" className="btn2" onClick={() => updateHistory(toRate.id, (h) => ({ ...h, rating: 'down' }) as typeof h)}>
+              👎 唔好
+            </button>
+          </div>
+        </Card>
+      )}
+
       <div className="home-grid">
         {TILES.map((t) => (
           <button
@@ -140,6 +166,31 @@ export function Home() {
           </button>
         ))}
       </div>
+
+      {l.n > 0 && (
+        <Card label="遷就帳簿・最近投票決定" shadow={COLORS.pink}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+            {(['A', 'B'] as const).map((p) => (
+              <div key={p} className="ledger-cell">
+                <span className={`avatar ${p.toLowerCase()}`}>{initial(names[p])}</span>
+                <b>{l.happier[p]}</b>
+                <span className="note">次較開心</span>
+              </div>
+            ))}
+            <div className="ledger-cell">
+              <span className="avatar" style={{ background: COLORS.yellow }}>＝</span>
+              <b>{l.ties}</b>
+              <span className="note">次打和</span>
+            </div>
+          </div>
+          <p className="note" style={{ margin: 0 }}>
+            {boost
+              ? `${names[boost.who]} 最近遷就多咗，下次投票佢嘅 ❤️👍 會 ×${boost.multiplier.toFixed(1)}。`
+              : '兩個差唔多，冇人需要補償。'}
+            （計最近 {l.n} 次有投票嘅決定）
+          </p>
+        </Card>
+      )}
 
       <div className="status">
         <div>

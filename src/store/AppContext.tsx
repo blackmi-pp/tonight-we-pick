@@ -25,12 +25,20 @@ interface Ctx {
   round: Round;
   setRound: (fn: (r: Round) => Round) => void;
   startRound: (category: Category) => void;
-  addHistory: (e: DistributiveOmit<HistoryEntry, 'id' | 'ts'>, ts?: number) => void;
+  /** Returns the new entry's id (for undo). */
+  addHistory: (e: DistributiveOmit<HistoryEntry, 'id' | 'ts'>, ts?: number) => string;
+  updateHistory: (id: string, fn: (h: HistoryEntry) => HistoryEntry) => void;
   removeHistory: (id: string) => void;
   resetAll: () => void;
-  toast: (msg: string) => void;
-  toastMsg: string | null;
+  toast: (msg: string, action?: ToastAction) => void;
+  toastMsg: { msg: string; action?: ToastAction } | null;
+  dismissToast: () => void;
   saveFailed: boolean;
+}
+
+export interface ToastAction {
+  label: string;
+  run: () => void;
 }
 
 type DistributiveOmit<T, K extends keyof never> = T extends unknown ? Omit<T, K> : never;
@@ -55,13 +63,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<SavedState>(() => load());
   const [screen, setScreen] = useState<Screen>(() => (data.setupDone ? 'home' : 'setup'));
   const [round, setRoundState] = useState<Round>(() => emptyRound('eat'));
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<Ctx['toastMsg']>(null);
   const [saveFailed, setSaveFailed] = useState(false);
   const toastTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     setSaveFailed(!save(data));
   }, [data]);
+
+  // Ask the browser not to evict our data under storage pressure (best-effort, silent).
+  useEffect(() => {
+    void navigator.storage?.persist?.().catch(() => undefined);
+  }, []);
 
   // Android back gesture / browser back moves between screens instead of leaving the app.
   useEffect(() => {
@@ -88,7 +101,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const startRound = useCallback((category: Category) => setRoundState(emptyRound(category)), []);
 
   const addHistory = useCallback<Ctx['addHistory']>((e, ts = Date.now()) => {
-    setData((d) => ({ ...d, history: [{ ...e, id: newId(), ts } as HistoryEntry, ...d.history] }));
+    const id = newId();
+    setData((d) => ({ ...d, history: [{ ...e, id, ts } as HistoryEntry, ...d.history] }));
+    return id;
+  }, []);
+  const updateHistory = useCallback((id: string, fn: (h: HistoryEntry) => HistoryEntry) => {
+    setData((d) => ({ ...d, history: d.history.map((h) => (h.id === id ? fn(h) : h)) }));
   }, []);
   const removeHistory = useCallback((id: string) => {
     setData((d) => ({ ...d, history: d.history.filter((h) => h.id !== id) }));
@@ -101,10 +119,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setScreen('setup');
   }, []);
 
-  const toast = useCallback((msg: string) => {
-    setToastMsg(msg);
+  const toast = useCallback((msg: string, action?: ToastAction) => {
+    setToastMsg({ msg, action });
     window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToastMsg(null), 2600);
+    toastTimer.current = window.setTimeout(() => setToastMsg(null), action ? 5000 : 2600);
+  }, []);
+  const dismissToast = useCallback(() => {
+    window.clearTimeout(toastTimer.current);
+    setToastMsg(null);
   }, []);
 
   const names = useMemo(
@@ -122,10 +144,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRound,
     startRound,
     addHistory,
+    updateHistory,
     removeHistory,
     resetAll,
     toast,
     toastMsg,
+    dismissToast,
     saveFailed,
   };
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;

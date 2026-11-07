@@ -30,7 +30,7 @@ describe('voteFactor', () => {
 
   it('either veto removes the option and remembers who', () => {
     const v: Votes = { A: { 火鍋: 'love' }, B: { 火鍋: 'no' } };
-    expect(voteFactor(v, '火鍋')).toEqual({ factor: 0, vetoedBy: ['B'] });
+    expect(voteFactor(v, '火鍋')).toMatchObject({ factor: 0, vetoedBy: ['B'], boosted: false });
   });
 
   it('no votes object → neutral', () => {

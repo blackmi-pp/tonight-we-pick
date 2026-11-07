@@ -197,3 +197,18 @@ input { font: inherit; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 .verdict > [role='img'] { margin: 0 auto 6px; }
+.toast { display: flex; align-items: center; gap: 12px; }
+.toast button { flex: none; border: 2px solid var(--yellow); background: none; color: var(--yellow); border-radius: 99px; padding: 4px 12px; font-weight: 700; font-size: 13px; cursor: pointer; }
+.ledger-cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; background: #fff; border: 2px solid var(--ink); border-radius: 12px; }
+.ledger-cell b { font: 700 26px var(--display); line-height: 1.1; }
+.boost-note { background: var(--yellow); border: 2px solid var(--ink); border-radius: 12px; padding: 10px 12px; font-weight: 700; font-size: 13.5px; line-height: 1.45; }
+.quick-edit { background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 10px 12px; }
+.quick-edit summary { font-weight: 700; cursor: pointer; }
+.quick-edit[open] summary { margin-bottom: 10px; }
+.pill.sm { min-height: 34px; padding: 5px 12px; font-size: 13px; }
+.chip-label { width: auto !important; height: auto !important; border: 0; background: none; padding: 0; font: inherit; font-weight: 700; color: var(--ink) !important; font-size: 14px !important; cursor: pointer; }
+.chip-label small { font-weight: 500; color: rgba(28, 26, 23, .45); }
+.chip[aria-current='true'] { background: var(--yellow); }
+.tag-editor { background: #fff; border: 2px dashed var(--ink); border-radius: 12px; padding: 10px; margin-bottom: 10px; }
+.settings-block { display: flex; flex-direction: column; gap: 10px; }
+.settings-block + .settings-block { border-top: 2px dashed rgba(28, 26, 23, .15); padding-top: 14px; }

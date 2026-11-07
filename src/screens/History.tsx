@@ -17,7 +17,7 @@ const TAG_COLOR: Record<string, string> = {
 function describe(h: HistoryEntry, names: Record<'A' | 'B', string>): { tag: string; what: string } {
   switch (h.kind) {
     case 'pick':
-      return { tag: CATEGORY_TAG[h.category], what: h.option };
+      return { tag: CATEGORY_TAG[h.category], what: h.option + (h.rating === 'up' ? ' 👍' : h.rating === 'down' ? ' 👎' : '') };
     case 'chore':
       return {
         tag: '家務',
@@ -38,14 +38,14 @@ function cooldownSummary(cat: Category, options: string[]): string | null {
 }
 
 export function History() {
-  const { data, names, removeHistory } = useApp();
+  const { data, names, removeHistory, update } = useApp();
   const now = Date.now();
   const summaries = (['eat', 'go', 'watch'] as const)
     .map((c) => cooldownSummary(c, data.options[c]))
     .filter((s): s is string => !!s);
 
   return (
-    <div className="narrow">
+    <div className="narrow" style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
       <Card label="決定歷史" shadow={COLORS.green}>
         {data.history.length === 0 ? (
           <div className="handoff">
@@ -82,6 +82,27 @@ export function History() {
           ))}
           記錯咗可以撳 × 刪走，冷卻期同家務分會即刻跟住改。
         </div>
+      </Card>
+      <Card label="片單" shadow={COLORS.yellow}>
+        {data.watchlist.length === 0 ? (
+          <span className="note">「今晚睇乜」出結果嗰陣可以將想睇嘅戲加落嚟。</span>
+        ) : (
+          <div className="list">
+            {data.watchlist.map((w) => (
+              <div key={w} className="li">
+                <span className="grow">{w}</span>
+                <button
+                  type="button"
+                  className="x"
+                  aria-label={`刪走 ${w}`}
+                  onClick={() => update((d) => ({ ...d, watchlist: d.watchlist.filter((x) => x !== w) }))}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );

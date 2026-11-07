@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Mascot } from '../components/Mascot';
 import { Btn, Card, COLORS } from '../components/ui';
 import { RULES } from '../data/rules';
+import { compromiseBoost, ledger } from '../engine/fairness';
 import { daysLabel } from '../engine/reasons';
+import { OptionEditor } from './Setup';
 import type { Person, Vote as VoteT, Votes } from '../engine/types';
 import { daysBetween, lastPickedAt } from '../engine/weights';
 import { useApp } from '../store/AppContext';
@@ -23,6 +25,8 @@ export function Vote() {
   const options = data.options[cat];
   const now = Date.now();
   const hasConditions = RULES[cat].groups.length > 0;
+  const boost = compromiseBoost(ledger(data.history, now));
+  const Q: Record<typeof cat, string> = { eat: '你今晚想食乜？', go: '你今日想去邊？', watch: '你今晚想睇乜？', custom: '你想點？' };
 
   const setVote = (o: string, v: VoteT) =>
     setMine((m) => ({ ...m, [voter]: { ...m[voter], [o]: m[voter][o] === v ? undefined : v } }));
@@ -63,12 +67,23 @@ export function Vote() {
     <div className="narrow">
       <Card label="第一步・兩個人各自秘密投票" right={`輪到：${names[voter]}`}>
         <h2 className="title">
-          {names[voter]}，{cat === 'eat' ? '你今晚想食乜？' : '你想點？'}
+          {names[voter]}，{Q[cat]}
         </h2>
         <p className="sub">
           另一半睇唔到你嘅答案。任何一方「{cat === 'eat' ? '今日唔想' : '唔要'}」嘅選項會直接出局；冇投嘅當「可以接受」。
         </p>
-        {options.length === 0 && <div className="empty">呢個轉盤未有選項，去設定加返先。</div>}
+        {boost && voter === boost.who && (
+          <div className="boost-note">
+            ⚖️ {names[boost.who]}，你最近遷就多咗，今次你嘅 ❤️👍 會 ×{boost.multiplier.toFixed(1)}。
+          </div>
+        )}
+        {cat === 'custom' && voter === 'A' && (
+          <details className="quick-edit" open={options.every((o) => /^選項 [A-Z]$/.test(o))}>
+            <summary>✏️ 改今次嘅選項</summary>
+            <OptionEditor category="custom" bare />
+          </details>
+        )}
+        {options.length === 0 && <div className="empty">呢個轉盤未有選項，{cat === 'custom' ? '喺上面加' : '去設定加返'}先。</div>}
         <div>
           {options.map((o) => {
             const last = lastPickedAt(data.history, cat, o);

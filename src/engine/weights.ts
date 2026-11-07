@@ -1,6 +1,7 @@
 import type { CategoryRules } from '../data/rules';
 import type { Category, Conditions, HistoryEntry, Person, Vote, Votes } from './types';
 
+import { type Boost, ratingFactor } from './fairness';
 import { DAY_MS, calendarDaysAgo } from './time';
 
 export { DAY_MS };
@@ -36,6 +37,12 @@ export interface OptionWeight {
   conditionFactor: number;
   conditionEffects: ConditionEffect[];
   cooldownFactor: number;
+  /** From past 👍/👎 on this option. */
+  ratingFactor: number;
+  ratingUps: number;
+  ratingDowns: number;
+  /** Set when the 遷就帳簿 boosted someone's vote on this option. */
+  boosted: Boost | null;
   /** Whole days since this option was last accepted in this category, or null if never. */
   daysSinceLast: number | null;
   cooldownDays: number;
@@ -51,6 +58,8 @@ export interface WeightInput {
   now: number;
   /** Options to leave out this round (e.g. the one just rerolled away). */
   exclude?: string[];
+  /** 遷就帳簿: amplify the votes of whoever has been compromising lately. */
+  boost?: Boost | null;
 }
 
 export function lastPickedAt(history: HistoryEntry[], category: Category, option: string): number | null {
@@ -68,16 +77,30 @@ export function daysBetween(earlier: number, later: number): number {
   return Math.max(0, calendarDaysAgo(earlier, later));
 }
 
-export function voteFactor(votes: Votes | undefined, option: string): { factor: number; vetoedBy: Person[] } {
-  if (!votes) return { factor: 1, vetoedBy: [] };
+/**
+ * Both people's points multiplied. With a boost, the compromiser's points above neutral are
+ * stretched (❤️ 3 → 1 + 2×m), so their likes count more while 可以接受 stays 1.
+ */
+export function voteFactor(
+  votes: Votes | undefined,
+  option: string,
+  boost?: Boost | null,
+): { factor: number; vetoedBy: Person[]; boosted: boolean } {
+  if (!votes) return { factor: 1, vetoedBy: [], boosted: false };
   const vetoedBy: Person[] = [];
   let factor = 1;
+  let boosted = false;
   for (const p of ['A', 'B'] as const) {
     const v = votes[p][option];
     if (v === 'no') vetoedBy.push(p);
-    factor *= v ? VOTE_POINTS[v] : NO_VOTE_POINTS;
+    let pts = v ? VOTE_POINTS[v] : NO_VOTE_POINTS;
+    if (boost && boost.who === p && pts > 1) {
+      pts = 1 + (pts - 1) * boost.multiplier;
+      boosted = true;
+    }
+    factor *= pts;
   }
-  return { factor: vetoedBy.length ? 0 : factor, vetoedBy };
+  return { factor: vetoedBy.length ? 0 : factor, vetoedBy, boosted: boosted && !vetoedBy.length };
 }
 
 export function cooldownFactor(
@@ -130,30 +153,35 @@ export function conditionEffects(
 }
 
 /**
- * The weighting engine: weight = votes × conditions × cooldown.
+ * The weighting engine: weight = votes (with 遷就 boost) × conditions × cooldown × ratings.
  * Probabilities are exactly what the wheel draws and shows as slice sizes.
  */
 export function computeWeights(input: WeightInput): OptionWeight[] {
-  const { category, options, votes, conditions, history, rules, now, exclude = [] } = input;
+  const { category, options, votes, conditions, history, rules, now, exclude = [], boost = null } = input;
   const rows = options
     .filter((o) => !exclude.includes(o))
     .map((option): OptionWeight => {
       const last = lastPickedAt(history, category, option);
       const daysSinceLast = last === null ? null : daysBetween(last, now);
       const cdDays = rules.cooldownOverrides[option] ?? rules.cooldownDays;
-      const { factor: vf, vetoedBy } = voteFactor(votes, option);
+      const { factor: vf, vetoedBy, boosted } = voteFactor(votes, option, boost);
+      const rf = ratingFactor(history, category, option);
       const effects = conditionEffects(rules, conditions, option, daysSinceLast);
       const cf = effects.reduce((acc, e) => acc * e.multiplier, 1);
       const cdf = cooldownFactor(daysSinceLast, cdDays, rules.longGapDays);
       return {
         option,
-        weight: vf * cf * cdf,
+        weight: vf * cf * cdf * rf.factor,
         probability: 0,
         vetoedBy,
         voteFactor: vf,
         conditionFactor: cf,
         conditionEffects: effects,
         cooldownFactor: cdf,
+        ratingFactor: rf.factor,
+        ratingUps: rf.ups,
+        ratingDowns: rf.downs,
+        boosted: boosted ? boost : null,
         daysSinceLast,
         cooldownDays: cdDays,
       };

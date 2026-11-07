@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Mascot } from '../components/Mascot';
 import { Card, COLORS } from '../components/ui';
-import { CATEGORY_LABEL, RULES } from '../data/rules';
+import { CATEGORY_LABEL, rulesWithTags } from '../data/rules';
+import { compromiseBoost, ledger } from '../engine/fairness';
 import { pct } from '../engine/reasons';
 import { computeWeights, drawIndex, eligible, type OptionWeight } from '../engine/weights';
 import { arcPath, slicesFor, targetRotation } from '../engine/wheel';
@@ -10,6 +11,9 @@ import { useApp } from '../store/AppContext';
 export const SPIN_SECONDS = 4.2;
 const SEG_COLORS = ['#f2467f', '#ffd23f', '#a8d84b', '#f4eeda', '#7fc8bd', '#f2865e', '#c78bde', '#5e9df2', '#e0b64a', '#8fd8a0', '#f2a8c0', '#d8cf4b'];
 export const segColor = (i: number) => SEG_COLORS[i % SEG_COLORS.length]!;
+
+/** Long names would run into the hub; the full name is always in the odds list. */
+export const label = (o: string) => ([...o].length > 6 ? [...o].slice(0, 5).join('') + '…' : o);
 
 const fmt = (x: number) => (Number.isInteger(x) ? String(x) : x.toFixed(x < 1 ? 2 : 1));
 
@@ -20,6 +24,8 @@ function why(r: OptionWeight, names: Record<'A' | 'B', string>): string {
   if (r.conditionFactor !== 1) parts.push(`條件 ×${fmt(r.conditionFactor)}`);
   if (r.cooldownFactor < 1) parts.push(`冷卻中 ×${fmt(r.cooldownFactor)}`);
   if (r.cooldownFactor > 1) parts.push(`${r.daysSinceLast} 日冇揀 ×${fmt(r.cooldownFactor)}`);
+  if (r.ratingFactor !== 1) parts.push(`評分 ×${fmt(r.ratingFactor)}`);
+  if (r.boosted) parts.push(`含${names[r.boosted.who]}遷就加成`);
   return parts.length ? parts.join('・') : '冇加減';
 }
 
@@ -35,11 +41,12 @@ export function useRoundWeights() {
         votes: round.votes,
         conditions: round.conditions,
         history: data.history,
-        rules: RULES[round.category],
+        rules: rulesWithTags(round.category, data.tags),
         now,
         exclude: round.exclude,
+        boost: round.votes ? compromiseBoost(ledger(data.history, now)) : null,
       }),
-    [data.options, data.history, round.category, round.votes, round.conditions, round.exclude, now],
+    [data.options, data.history, data.tags, round.category, round.votes, round.conditions, round.exclude, now],
   );
 }
 
@@ -63,6 +70,11 @@ export function Wheel() {
     setSpinning(true);
     setRotation(target);
     timer.current = window.setTimeout(() => {
+      try {
+        navigator.vibrate?.(60);
+      } catch {
+        /* not supported */
+      }
       setRound((r) => ({ ...r, winner, rotation: target }));
       go('result');
     }, SPIN_SECONDS * 1000 + 300);
@@ -99,7 +111,7 @@ export function Wheel() {
                 const mid = (s.start + s.end) / 2;
                 const width = s.end - s.start;
                 const flip = mid > 180;
-                const fontSize = Math.min(13, Math.max(8, 70 / Math.max(2, r.option.length)));
+                const fontSize = Math.min(13, Math.max(9, 62 / Math.max(2, label(r.option).length)));
                 return (
                   <g key={r.option}>
                     <path d={arcPath(100, 100, 96.5, s)} fill={colorOf(r.option)} stroke={COLORS.ink} strokeWidth="2" strokeLinejoin="round" />
@@ -113,7 +125,7 @@ export function Wheel() {
                         fontSize={fontSize}
                         fill={COLORS.ink}
                       >
-                        {r.option}
+                        {label(r.option)}
                       </text>
                     )}
                   </g>
@@ -155,7 +167,7 @@ export function Wheel() {
           ))}
         </div>
         <p className="note" style={{ margin: 0 }}>
-          點計：權重 = 投票（兩人分數相乘：❤️3・👍2・😐1・👎出局）× 條件 × 冷卻期，再按比例變成機率。啱啱揀過嘅會打折，隔耐冇揀嘅有加成。
+          點計：權重 = 投票（兩人分數相乘：❤️3・👍2・😐1・👎出局）× 條件 × 冷卻期 × 評分，再按比例變成機率。啱啱揀過嘅會打折，隔耐冇揀嘅有加成；最近遷就多咗嗰位，佢嘅票會加成。
         </p>
       </Card>
     </div>

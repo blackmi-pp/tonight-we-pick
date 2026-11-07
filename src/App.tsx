@@ -10,7 +10,7 @@ import { Wheel } from './screens/Wheel';
 import { AppProvider, useApp } from './store/AppContext';
 
 function Screens() {
-  const { screen, toastMsg, saveFailed } = useApp();
+  const { screen, toastMsg, dismissToast, saveFailed } = useApp();
   return (
     <div className="app">
       <Header />
@@ -32,7 +32,18 @@ function Screens() {
       )}
       {toastMsg && (
         <div className="toast" role="status">
-          {toastMsg}
+          <span>{toastMsg.msg}</span>
+          {toastMsg.action && (
+            <button
+              type="button"
+              onClick={() => {
+                toastMsg.action!.run();
+                dismissToast();
+              }}
+            >
+              {toastMsg.action.label}
+            </button>
+          )}
         </div>
       )}
     </div>

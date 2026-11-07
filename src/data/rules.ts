@@ -227,3 +227,33 @@ export const CATEGORY_TAG: Record<Category, string> = {
   watch: '睇乜',
   custom: '自訂',
 };
+
+/** Tags the couple can stick on their own options, per category (tag → label). */
+export const TAG_CHOICES: Record<Category, Record<string, string>> = {
+  eat: {
+    cheap: '平', pricey: '貴', near: '近', far: '遠', dinein: '堂食', delivery: '外賣', home: '自己煮',
+    fast: '快', slow: '慢慢食', healthy: '健康', junk: '邪惡', treat: '開心', celebrate: '慶祝', easy: '唔使攰',
+  },
+  go: {
+    indoor: '室內', outdoor: '戶外', active: '郁動', quiet: '靜', lively: '熱鬧', photo: '好影相',
+    near: '近', far: '遠', short: '兩三個鐘', long: '要成日',
+  },
+  watch: {
+    short: '短', medium: '一兩個鐘', long: '長', focus: '要專心', background: '可以背景播', light: '輕鬆',
+    funny: '搞笑', thrill: '刺激', cry: '喊', learn: '長知識', nothing: '唔睇',
+  },
+  custom: {},
+};
+
+export type UserTags = Partial<Record<Category, Record<string, string[]>>>;
+
+/** Effective tags for an option: the couple's own tags win over the built-in ones. */
+export function tagsFor(cat: Category, option: string, user: UserTags | undefined): string[] {
+  return user?.[cat]?.[option] ?? RULES[cat].optionTags[option] ?? [];
+}
+
+export function rulesWithTags(cat: Category, user: UserTags | undefined): CategoryRules {
+  const own = user?.[cat];
+  if (!own || Object.keys(own).length === 0) return RULES[cat];
+  return { ...RULES[cat], optionTags: { ...RULES[cat].optionTags, ...own } };
+}

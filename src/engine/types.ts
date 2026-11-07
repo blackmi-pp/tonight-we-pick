@@ -15,6 +15,10 @@ export type HistoryEntry =
       category: Category;
       option: string;
       ts: number;
+      /** What each person voted for the winner (only when the round had votes). Feeds the 遷就帳簿. */
+      votes?: Partial<Record<Person, Vote>>;
+      /** Afterwards: was it good? Feeds future odds. */
+      rating?: Rating;
     }
   | {
       id: string;
@@ -33,6 +37,8 @@ export type HistoryEntry =
       chore: string;
       ts: number;
     };
+
+export type Rating = 'up' | 'down';
 
 export interface Chore {
   name: string;

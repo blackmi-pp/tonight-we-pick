@@ -1,4 +1,4 @@
-import { DEFAULT_CHORES, DEFAULT_OPTIONS } from '../data/rules';
+import { DEFAULT_CHORES, DEFAULT_OPTIONS, type UserTags } from '../data/rules';
 import type { Category, Chore, HistoryEntry, Person } from '../engine/types';
 
 export const STORAGE_KEY = 'twp:v1';
@@ -12,6 +12,8 @@ export interface SavedState {
   chores: Chore[];
   history: HistoryEntry[];
   watchlist: string[];
+  /** The couple's own tags on options (overrides built-in tags). */
+  tags: UserTags;
 }
 
 export function freshState(): SavedState {
@@ -23,6 +25,7 @@ export function freshState(): SavedState {
     chores: structuredClone(DEFAULT_CHORES),
     history: [],
     watchlist: [],
+    tags: {},
   };
 }
 
@@ -33,13 +36,22 @@ export function newId(): string {
 }
 
 const CATS: Category[] = ['eat', 'go', 'watch', 'custom'];
+const VOTES = ['love', 'yes', 'ok', 'no'];
 const isObj = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
 const strArr = (x: unknown): string[] | null =>
   Array.isArray(x) && x.every((s) => typeof s === 'string') ? (x as string[]) : null;
 
 function isHistoryEntry(x: unknown): x is HistoryEntry {
   if (!isObj(x) || typeof x.id !== 'string' || typeof x.ts !== 'number') return false;
-  if (x.kind === 'pick') return CATS.includes(x.category as Category) && typeof x.option === 'string';
+  if (x.kind === 'pick') {
+    if (!CATS.includes(x.category as Category) || typeof x.option !== 'string') return false;
+    if (x.rating !== undefined && x.rating !== 'up' && x.rating !== 'down') return false;
+    if (x.votes !== undefined) {
+      if (!isObj(x.votes)) return false;
+      for (const v of Object.values(x.votes)) if (!VOTES.includes(v as string)) return false;
+    }
+    return true;
+  }
   if (x.kind === 'chore')
     return typeof x.chore === 'string' && (x.who === 'A' || x.who === 'B') && typeof x.pts === 'number';
   if (x.kind === 'skipCard') return (x.who === 'A' || x.who === 'B') && typeof x.chore === 'string';
@@ -65,7 +77,24 @@ export function sanitize(raw: unknown): SavedState {
       : base.chores,
     history: Array.isArray(raw.history) ? raw.history.filter(isHistoryEntry).slice(0, HISTORY_LIMIT) : [],
     watchlist: strArr(raw.watchlist) ?? [],
+    tags: sanitizeTags(raw.tags),
   };
+  return out;
+}
+
+function sanitizeTags(raw: unknown): UserTags {
+  if (!isObj(raw)) return {};
+  const out: UserTags = {};
+  for (const c of CATS) {
+    const m = raw[c];
+    if (!isObj(m)) continue;
+    const clean: Record<string, string[]> = {};
+    for (const [opt, tags] of Object.entries(m)) {
+      const t = strArr(tags);
+      if (t) clean[opt] = t;
+    }
+    out[c] = clean;
+  }
   return out;
 }
 
