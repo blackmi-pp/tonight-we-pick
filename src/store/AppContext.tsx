@@ -14,6 +14,10 @@ export interface Round {
   rerolled: boolean;
   winner?: string;
   rotation: number;
+  /** Set when someone challenged the result to a mini-game and won. */
+  duelWinner?: Person;
+  /** One duel per round, so a sore loser can't duel forever. */
+  dueled?: boolean;
 }
 
 interface Ctx {

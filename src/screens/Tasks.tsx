@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Mascot } from '../components/Mascot';
+import { Duel } from '../games/Duel';
 import { Btn, Card, COLORS, Pills } from '../components/ui';
 import {
   assignChore,
@@ -22,6 +23,7 @@ interface Draw {
   who: Person | null;
   swapped: boolean;
   cardUsedBy: Person | null;
+  duelWinner?: Person;
 }
 
 export function Tasks() {
@@ -34,6 +36,7 @@ export function Tasks() {
   const [draw, setDraw] = useState<Draw | null>(null);
   const [newName, setNewName] = useState('');
   const [newPts, setNewPts] = useState('');
+  const [dueling, setDueling] = useState(false);
 
   const scores = weeklyScores(data.history, now);
   const cards = skipCardsLeft(data.history, now);
@@ -69,7 +72,7 @@ export function Tasks() {
       chore: draw.chore,
       who: draw.who,
       pts: p,
-      via: draw.cardUsedBy ? 'skipCard' : draw.swapped ? 'swap' : draw.assignment.reason.kind === 'sick' ? 'sick' : 'draw',
+      via: draw.cardUsedBy ? 'skipCard' : draw.duelWinner ? 'duel' : draw.swapped ? 'swap' : draw.assignment.reason.kind === 'sick' ? 'sick' : 'draw',
     });
     toast(`今晚${draw.chore}：${names[draw.who]}・+${p} 分`);
     setDraw(null);
@@ -101,6 +104,7 @@ export function Tasks() {
         lines.push(`本星期兩個都係 ${r.scores.A} 分，${d.chore}紀錄又一樣，所以擲公字`);
         break;
     }
+    if (d.duelWinner) lines.push(`${names[d.duelWinner]} 贏咗對決，${names[other(d.duelWinner)]} 願賭服輸`);
     if (d.swapped && d.who) lines.push(`${names[other(d.who)]} 提出交換，${names[d.who]} 接手`);
     if (d.cardUsedBy) lines.push(`${names[d.cardUsedBy]} 用咗一張免做卡（接受先會扣）`);
     if (d.who) lines.push(`做完 ${names[d.who]} +${pts(d.chore)} 分`);
@@ -165,7 +169,7 @@ export function Tasks() {
               <button
                 type="button"
                 className="btn2"
-                disabled={draw.swapped || !!draw.cardUsedBy}
+                disabled={draw.swapped || !!draw.cardUsedBy || !!draw.duelWinner}
                 onClick={() => setDraw({ ...draw, who: other(draw.who!), swapped: true })}
               >
                 {draw.swapped ? '已交換' : '對方同意交換'}
@@ -173,12 +177,34 @@ export function Tasks() {
               <button
                 type="button"
                 className="btn2 danger"
-                disabled={!!draw.cardUsedBy || draw.swapped || cards[draw.who] <= 0}
+                disabled={!!draw.cardUsedBy || draw.swapped || !!draw.duelWinner || cards[draw.who] <= 0}
                 onClick={() => setDraw({ ...draw, cardUsedBy: draw.who, who: other(draw.who!) })}
               >
                 {draw.cardUsedBy ? '已用卡' : `${names[draw.who]} 用免做卡（剩 ${cards[draw.who]}）`}
               </button>
             </div>
+          )}
+          {draw.who && (
+            <button
+              type="button"
+              className="btn2"
+              style={{ background: draw.duelWinner || draw.swapped || draw.cardUsedBy ? undefined : COLORS.yellow }}
+              disabled={!!draw.duelWinner || draw.swapped || !!draw.cardUsedBy}
+              onClick={() => setDueling(true)}
+            >
+              {draw.duelWinner ? '對決過喇' : `⚔️ ${names[draw.who]} 唔服？對決`}
+            </button>
+          )}
+          {dueling && draw.who && (
+            <Duel
+              stakes={`輸咗嗰個做今晚嘅${draw.chore}`}
+              doneLabel={(w) => `${names[other(w)]} 去做 →`}
+              onCancel={() => setDueling(false)}
+              onDone={(w) => {
+                setDraw({ ...draw, who: other(w), duelWinner: w });
+                setDueling(false);
+              }}
+            />
           )}
           <button type="button" className="linkbtn" style={{ color: 'rgba(244,238,218,.8)' }} onClick={() => setDraw(null)}>
             ← 唔算，返轉頭

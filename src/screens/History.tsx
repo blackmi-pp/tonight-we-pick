@@ -21,7 +21,7 @@ function describe(h: HistoryEntry, names: Record<'A' | 'B', string>): { tag: str
     case 'chore':
       return {
         tag: '家務',
-        what: `${h.chore} — ${names[h.who]}（+${h.pts}${h.via === 'swap' ? '・交換' : h.via === 'skipCard' ? '・對方用卡' : ''}）`,
+        what: `${h.chore} — ${names[h.who]}（+${h.pts}${h.via === 'swap' ? '・交換' : h.via === 'skipCard' ? '・對方用卡' : h.via === 'duel' ? '・對決輸咗' : ''}）`,
       };
     case 'skipCard':
       return { tag: '免做卡', what: `${names[h.who]} 用卡避開${h.chore}` };

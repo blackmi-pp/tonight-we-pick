@@ -21,6 +21,21 @@
 - **自己嘅選項 + 標籤**：可以加「樓下茶記」再貼「平・近・快」，條件就會影響佢。
 - **食完評分**：之後彈出 👍／👎，👎 會降低嗰個選項之後嘅機率。
 
+## 免費 API（唔使 key、零後端）
+
+| 用途 | 來源 | 點 call |
+| --- | --- | --- |
+| 「今日去邊」自動填天氣、首頁氣溫 | [香港天文台開放數據](https://data.weather.gov.hk/weatherAPI/doc/HKO_Open_Data_API_Documentation_tc.pdf) | `fetch`（CORS） |
+| 附近餐廳／地方 | OpenStreetMap [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API)（有後備伺服器） | `fetch` POST |
+| 地圖 | Google Maps 內嵌（唔使 key）＋ Google／Apple Maps 導航 link | iframe／link |
+| 揀戲建議 | [iTunes Search API](https://performance-partners.apple.com/search-api)（香港區） | JSONP（佢冇 CORS） |
+
+全部失敗時都會退返去「開地圖搜尋」或者收埋，唔會令 app 用唔到。位置只喺撳「搵附近」嗰陣攞一次，唔會儲低。
+
+## 小遊戲對決
+
+包剪揼（三局兩勝、輪流秘密出）、撳快啲（8 秒）、停錶挑戰（盲停 5.00 秒）。可以喺首頁自由對決，結果唔服可以對決一次（贏家話事接受定重轉），家務唔服都可以對決（輸咗做）。
+
 ## 加權引擎（`src/engine/weights.ts`）
 
 ```

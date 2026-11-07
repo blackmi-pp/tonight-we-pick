@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Duel } from '../games/Duel';
+import { useWeather } from '../services/hooks';
 import { Mascot } from '../components/Mascot';
 import { Card, COLORS, initial } from '../components/ui';
 import { compromiseBoost, ledger, pendingRating } from '../engine/fairness';
@@ -70,8 +72,10 @@ const TILES: {
 ];
 
 export function Home() {
-  const { data, go, startRound, names, updateHistory } = useApp();
+  const { data, go, startRound, names, updateHistory, toast } = useApp();
   const [poke, setPoke] = useState(0);
+  const [dueling, setDueling] = useState(false);
+  const weather = useWeather();
   const now = Date.now();
 
   const open = (k: (typeof TILES)[number]['key']) => {
@@ -113,6 +117,11 @@ export function Home() {
           }}
         >
           {names.A} 同 {names.B}，今晚揀咩先？
+          {weather && (
+            <div className="note" style={{ fontWeight: 500, marginTop: 2 }}>
+              {weather.emoji} {weather.label}
+            </div>
+          )}
         </div>
       </div>
 
@@ -166,6 +175,27 @@ export function Home() {
           </button>
         ))}
       </div>
+
+      <button type="button" className="card home-card wide flat" style={{ '--shadow': COLORS.ink } as React.CSSProperties} onClick={() => setDueling(true)}>
+        <div className="card-in" style={{ background: COLORS.green }}>
+          <div className="emoji">⚔️</div>
+          <div>
+            <div className="name">對決</div>
+            <div className="desc">包剪揼、撳快啲、停錶挑戰：贏家話事</div>
+          </div>
+        </div>
+      </button>
+
+      {dueling && (
+        <Duel
+          stakes="自由對決：贏家話事（邊個沖涼先、邊個揀戲、遙控器歸邊個……）"
+          onCancel={() => setDueling(false)}
+          onDone={(w) => {
+            setDueling(false);
+            toast(`${names[w]} 贏咗對決，${names[w]} 話事！`);
+          }}
+        />
+      )}
 
       {l.n > 0 && (
         <Card label="遷就帳簿・最近投票決定" shadow={COLORS.pink}>

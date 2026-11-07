@@ -28,7 +28,7 @@ export type HistoryEntry =
       pts: number;
       ts: number;
       /** How the assignment ended up with `who`. */
-      via?: 'draw' | 'swap' | 'skipCard' | 'sick';
+      via?: 'draw' | 'swap' | 'skipCard' | 'sick' | 'duel';
     }
   | {
       id: string;
