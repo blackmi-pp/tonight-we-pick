@@ -18,7 +18,7 @@ export default defineConfig({
         short_name: '今晚點揀',
         description: '兩個人決定所：今晚食乜、去邊、睇乜、邊個做家務',
         lang: 'zh-HK',
-        theme_color: '#b9c5cd',
+        theme_color: '#0b1330',
         background_color: '#fbfbfa',
         display: 'standalone',
         orientation: 'portrait',

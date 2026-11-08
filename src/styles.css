@@ -58,14 +58,55 @@ button { cursor: pointer; font-weight: 700; }
   position: relative;
   height: 380px;
   padding: calc(env(safe-area-inset-top) + 16px) var(--gutter) 0;
-  background: linear-gradient(var(--wall) 0 64%, var(--floor) 82%);
+  background:
+    radial-gradient(60% 45% at 78% 72%, rgba(255, 196, 150, 0.55), transparent 70%),
+    linear-gradient(180deg, #0b1330 0%, #1b2257 38%, #4b2f6e 66%, #a2466e 86%, #e0805f 100%);
+  color: #f6f3fb;
   overflow: hidden;
+  isolation: isolate;
 }
+/* blurred harbour lights */
+.studio::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  z-index: -1;
+  filter: blur(7px);
+  background:
+    radial-gradient(24px 24px at 43% 67%, #ffd36e88, transparent),
+    radial-gradient(10px 10px at 11% 92%, #ffd36eaa, transparent),
+    radial-gradient(10px 10px at 66% 71%, #9fe6ffcc, transparent),
+    radial-gradient(14px 14px at 55% 62%, #fff1c2cc, transparent),
+    radial-gradient(30px 30px at 56% 61%, #ffe9a8cc, transparent),
+    radial-gradient(30px 30px at 82% 98%, #9fe6ffcc, transparent),
+    radial-gradient(10px 10px at 8% 72%, #7fd8ff88, transparent),
+    radial-gradient(14px 14px at 39% 84%, #ff7fa888, transparent),
+    radial-gradient(30px 30px at 75% 77%, #7fd8ff88, transparent),
+    radial-gradient(30px 30px at 15% 95%, #ffe9a888, transparent),
+    radial-gradient(30px 30px at 49% 64%, #ff7fa888, transparent),
+    radial-gradient(30px 30px at 74% 61%, #ffc4e1cc, transparent),
+    radial-gradient(24px 24px at 89% 92%, #ffc4e1aa, transparent),
+    radial-gradient(18px 18px at 76% 87%, #ffe9a8aa, transparent),
+    radial-gradient(10px 10px at 25% 73%, #c58bff88, transparent),
+    radial-gradient(18px 18px at 69% 89%, #ffc4e188, transparent),
+    radial-gradient(10px 10px at 38% 96%, #fff1c2cc, transparent),
+    radial-gradient(18px 18px at 55% 68%, #ffc4e1cc, transparent),
+    radial-gradient(36px 36px at 55% 60%, #fff1c2cc, transparent),
+    radial-gradient(18px 18px at 75% 78%, #ff9a6e88, transparent),
+    radial-gradient(30px 30px at 78% 89%, #ff7fa8aa, transparent),
+    radial-gradient(24px 24px at 13% 75%, #ff7fa888, transparent),
+    radial-gradient(36px 36px at 9% 77%, #ffc4e188, transparent),
+    radial-gradient(36px 36px at 38% 82%, #ffd36eaa, transparent),
+    radial-gradient(14px 14px at 61% 80%, #ff7fa888, transparent),
+    radial-gradient(14px 14px at 65% 61%, #7fd8ffaa, transparent),
+    radial-gradient(120% 30% at 50% 100%, rgba(255, 150, 110, 0.35), transparent);
+}
+.studio .weather { color: rgba(246, 243, 251, 0.75) !important; }
 .studio-top { display: flex; align-items: center; justify-content: space-between; height: 40px; font-size: 17px; }
 .studio h1 { position: relative; z-index: 2; margin: 24px 0 0; font-size: 40px; line-height: 1.15; font-weight: 700; }
 .studio .weather { position: absolute; z-index: 2; left: var(--gutter); bottom: 52px; display: flex; gap: 6px; align-items: center; font-size: 15px; color: var(--ink-2); }
 .studio .mascot-btn { position: absolute; z-index: 1; right: 0; bottom: 40px; border: 0; padding: 0; background: none; }
-.studio .floor-shadow { position: absolute; right: 36px; bottom: 34px; width: 150px; height: 22px; border-radius: 50%; background: radial-gradient(closest-side, rgba(20, 28, 34, 0.35), transparent); }
+.studio .floor-shadow { position: absolute; right: 36px; bottom: 34px; width: 150px; height: 22px; border-radius: 50%; background: radial-gradient(closest-side, rgba(10, 8, 30, 0.5), transparent); }
 .sheet {
   position: relative;
   margin-top: -28px;
