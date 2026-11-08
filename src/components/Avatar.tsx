@@ -14,7 +14,7 @@ export function Avatar({ p, size = 28 }: { p: Person; size?: number }) {
       aria-label={`${names[p]}（${ANIMALS[animal]}）`}
       style={{ width: size, height: size, background: color, fontSize: Math.round(size * 0.42) }}
     >
-      {img ? <img src={img} alt="" /> : ANIMALS[animal].slice(0, 1)}
+      {img ? <img src={img} alt="" data-animal={animal} /> : ANIMALS[animal].slice(0, 1)}
     </span>
   );
 }
