@@ -130,7 +130,8 @@ export function Wheel() {
                         transform={`rotate(${mid - 90} 100 100) translate(${100 + 58} 100) rotate(${flip ? 180 : 0})`}
                         textAnchor="middle"
                         dominantBaseline="central"
-                        fontFamily="Huninn, 'PingFang HK', sans-serif"
+                        fontFamily="'Noto Sans TC', 'PingFang HK', sans-serif"
+                        fontWeight={700}
                         fontSize={fontSize}
                         fill={COLORS.ink}
                       >
