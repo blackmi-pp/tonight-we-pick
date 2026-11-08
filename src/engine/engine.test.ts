@@ -44,7 +44,7 @@ describe('reasons', () => {
     });
     const reasons = buildReasons({ category: 'eat', winner: rows[0]!, rows, votes, names: { A: 'Bo', B: 'Kit' } });
     expect(reasons[0]).toMatch(/^中獎機率 \d+%（2 個選項入面排第 1）$/);
-    expect(reasons).toContain('Bo 投咗「特別想」');
+    expect(reasons).toContain('Bo 投咗「好想」');
     expect(reasons).toContain('已經 40 日冇食，機率有加成');
     expect(reasons.some((r) => r.includes('夠隆重'))).toBe(true);
   });

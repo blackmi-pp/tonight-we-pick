@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Mascot } from '../components/Mascot';
 import { Duel } from '../games/Duel';
-import { Btn, Card, COLORS, Pills } from '../components/ui';
+import { Avatar } from '../components/Avatar';
+import { Icon } from '../components/icons';
+import { Btn, Card, Pills } from '../components/ui';
 import {
   assignChore,
   lastDone,
-  SKIP_CARDS_PER_MONTH,
-  skipCardsLeft,
+    skipCardsLeft,
   weeklyScores,
   type Assignment,
   type ChoreSituation,
@@ -111,18 +112,40 @@ export function Tasks() {
     return lines;
   };
 
+  const total = scores.A + scores.B;
   return (
-    <div className="narrow" style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
-      {!draw ? (
-        <Card label="FAIR・公平引擎" shadow={COLORS.green}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ flex: 1 }}>
-              <h2 className="title">今晚邊個負責？</h2>
-              <p className="sub" style={{ margin: '4px 0 0' }}>
-                本星期分少嗰位做；打和就睇邊個耐啲冇做過呢樣。
-              </p>
+    <div className="narrow">
+      <h1 className="page-title">家務</h1>
+      <Card label="本星期">
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          {(['A', 'B'] as const).map((p) => (
+            <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Avatar p={p} size={40} />
+              <div>
+                <div style={{ color: 'var(--ink-2)', fontSize: 15 }}>{names[p]}</div>
+                <div className="num" style={{ fontSize: 30, lineHeight: 1.1 }}>
+                  {scores[p]}
+                </div>
+              </div>
             </div>
-            <Mascot mood="sideEye" size={70} />
+          ))}
+        </div>
+        <div className="split" aria-hidden="true">
+          <i style={{ width: total ? `${(scores.A / total) * 100}%` : '50%', background: data.profiles.A.color }} />
+          <i style={{ flex: 1, background: data.profiles.B.color }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--ink-2)', fontSize: 14 }}>
+          <span>免做卡剩 {cards.A}</span>
+          <span>免做卡剩 {cards.B}</span>
+        </div>
+      </Card>
+      {!draw ? (
+        <>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+            <h2 className="title" style={{ flex: 1 }}>
+              今晚邊個負責？
+            </h2>
+            <Mascot mood="sideEye" size={84} />
           </div>
           <div>
             <div className="section-title">分配邊樣家務？</div>
@@ -142,27 +165,28 @@ export function Tasks() {
               labels={{ none: '冇特別', A: `${names.A} OT／唔舒服`, B: `${names.B} OT／唔舒服`, both: '兩個都癱咗' }}
             />
           </div>
-          {data.chores.length === 0 && <div className="note">家務表空咗，喺下面加返一樣先。</div>}
+          {data.chores.length === 0 && <div className="note">家務表空咗，喺下面加返一樣先</div>}
           <Btn onClick={doDraw} disabled={!chore}>
-            裁決！
+            裁決
           </Btn>
-        </Card>
+        </>
       ) : (
         <>
-          <Card label="本案裁決" shadow={COLORS.pink} bodyClass="">
-            <div className="verdict">
-              <Mascot mood={draw.who ? 'grumpy' : 'sleepy'} size={88} />
-              <div className="kicker">今晚{draw.chore}</div>
-              <div className="what">
-                <span>{draw.who ? names[draw.who] : '順延一晚'}</span>
-              </div>
+          <div className="verdict">
+            <Mascot mood={draw.who ? 'grumpy' : 'sleepy'} size={120} />
+            <div className="kicker">今晚{draw.chore}</div>
+            <div className="what" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              {draw.who && <Avatar p={draw.who} size={52} />}
+              {draw.who ? names[draw.who] : '順延一晚'}
             </div>
+          </div>
+          <Card label="點解">
+            <ul className="reasons">
+              {reasonLines(draw).map((l) => (
+                <li key={l}>{l}</li>
+              ))}
+            </ul>
           </Card>
-          <ul className="reasons">
-            {reasonLines(draw).map((l) => (
-              <li key={l}>{l}</li>
-            ))}
-          </ul>
           <Btn onClick={accept}>{draw.who ? '接受任務' : '好，聽日先算'}</Btn>
           {draw.who && (
             <div className="row">
@@ -188,17 +212,17 @@ export function Tasks() {
             <button
               type="button"
               className="btn2"
-              style={{ background: draw.duelWinner || draw.swapped || draw.cardUsedBy ? undefined : COLORS.yellow }}
               disabled={!!draw.duelWinner || draw.swapped || !!draw.cardUsedBy}
               onClick={() => setDueling(true)}
             >
-              {draw.duelWinner ? '對決過喇' : `⚔️ ${names[draw.who]} 唔服？對決`}
+              <Icon name="swords" size={18} />
+              {draw.duelWinner ? '對決過喇' : `${names[draw.who]} 唔服，對決`}
             </button>
           )}
           {dueling && draw.who && (
             <Duel
               stakes={`輸咗嗰個做今晚嘅${draw.chore}`}
-              doneLabel={(w) => `${names[other(w)]} 去做 →`}
+              doneLabel={(w) => `${names[other(w)]} 去做`}
               onCancel={() => setDueling(false)}
               onDone={(w) => {
                 setDraw({ ...draw, who: other(w), duelWinner: w });
@@ -206,13 +230,13 @@ export function Tasks() {
               }}
             />
           )}
-          <button type="button" className="linkbtn" style={{ color: 'rgba(244,238,218,.8)' }} onClick={() => setDraw(null)}>
-            ← 唔算，返轉頭
+          <button type="button" className="linkbtn" onClick={() => setDraw(null)}>
+            唔算，返轉頭
           </button>
         </>
       )}
 
-      <Card label="家務分數表" shadow={COLORS.yellow}>
+      <Card label="家務項目">
         <div className="list">
           {data.chores.map((c) => {
             const last = lastDone(data.history, c.name);
@@ -240,7 +264,7 @@ export function Tasks() {
             addChore();
           }}
         >
-          <input className="input" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="新家務（例：熨衫）" />
+          <input className="input" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="新家務" />
           <input
             className="input"
             style={{ flex: 'none', width: 64 }}
@@ -249,14 +273,11 @@ export function Tasks() {
             onChange={(e) => setNewPts(e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
             placeholder="分"
           />
-          <button type="submit" className="btn2" style={{ flex: 'none' }}>
-            ＋
+          <button type="submit" className="btn2" style={{ flex: 'none' }} aria-label="加家務">
+            <Icon name="plus" />
           </button>
         </form>
-        <p className="note" style={{ margin: 0 }}>
-          本星期（星期一開始）：{names.A} {scores.A} 分・{names.B} {scores.B} 分。免做卡每人每月 {SKIP_CARDS_PER_MONTH} 張，今個月剩：
-          {names.A} {cards.A}・{names.B} {cards.B}。
-        </p>
+
       </Card>
     </div>
   );

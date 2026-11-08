@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-const COLORS = ['#f2467f', '#ffd23f', '#a8d84b', '#7fc8bd', '#f2865e', '#c78bde', '#1c1a17'];
+const COLORS = ['#e9b44c', '#8fb8d8', '#e8957b', '#a9c98a', '#c5b3e6', '#1e2226'];
 
 /** Pure-CSS confetti burst. Decorative only; hidden from screen readers and reduced-motion users. */
 export function Confetti({ count = 46 }: { count?: number }) {

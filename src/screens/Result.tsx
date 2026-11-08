@@ -4,7 +4,10 @@ import { FilmSuggest } from '../components/FilmSuggest';
 import { Mascot } from '../components/Mascot';
 import { Nearby } from '../components/Nearby';
 import { Duel } from '../games/Duel';
-import { Btn, Card, COLORS } from '../components/ui';
+import { EarCard } from '../components/EarCard';
+import { Icon } from '../components/icons';
+import { FlowBar } from '../components/Nav';
+import { Btn, Card } from '../components/ui';
 import { CATEGORY_LABEL, tagsFor } from '../data/rules';
 import { buildReasons } from '../engine/reasons';
 import { useApp } from '../store/AppContext';
@@ -33,11 +36,9 @@ export function Result() {
 
   if (!winner) {
     return (
-      <div className="narrow">
-        <Card label="結果">
-          <div className="empty">呢輪已經完咗。</div>
-          <Btn onClick={() => go('home')}>返首頁</Btn>
-        </Card>
+      <div className="narrow" style={{ paddingTop: 48 }}>
+        <div className="empty">呢輪已經完咗</div>
+        <Btn onClick={() => go('home')}>返首頁</Btn>
       </div>
     );
   }
@@ -88,45 +89,37 @@ export function Result() {
   };
 
   return (
-    <div className="narrow" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <Card label={`結果・${CATEGORY_LABEL[cat]}`} shadow={COLORS.green} bodyClass="">
+    <>
+    <FlowBar title={CATEGORY_LABEL[cat]} />
+    <div className="narrow">
+      <EarCard perk="high">
         <Confetti key={winner.option} />
         <div className="verdict">
-          <Mascot mood="jump" once size={92} className="" />
-          <div className="kicker">轉盤裁決</div>
-          <div className="what">
-            {PREFIX[cat]}
-            <span>{winner.option}</span>
-          </div>
+          <Mascot mood="jump" once size={120} className="" />
+          <div className="kicker">{PREFIX[cat]}</div>
+          <div className="what">{winner.option}</div>
         </div>
+      </EarCard>
+
+      <Card label="點解係佢">
+        <ul className="reasons">
+          {reasons.map((r) => (
+            <li key={r}>{r}</li>
+          ))}
+        </ul>
       </Card>
 
-      <ul className="reasons" aria-label="點解係佢">
-        {reasons.map((r) => (
-          <li key={r}>{r}</li>
-        ))}
-      </ul>
+      {round.duelWinner && <div className="boost-note">{names[round.duelWinner]} 贏咗對決，接受定重轉由佢決定</div>}
 
-      {round.duelWinner && (
-        <div className="boost-note">
-          ⚔️ {names[round.duelWinner]} 贏咗對決，{names[round.duelWinner]} 話事：接受，定係用多次重轉。
-        </div>
-      )}
-
-      <Btn onClick={accept}>接受結果</Btn>
+      <Btn onClick={accept}>就咁話</Btn>
       <div className="row">
         <button type="button" className="btn2" onClick={reroll} disabled={!canReroll}>
-          {round.rerolled ? '重轉用晒' : round.duelWinner ? '贏家重轉' : '最後一次重轉'}
+          {round.rerolled ? '重轉用晒' : round.duelWinner ? '贏家重轉' : '重轉一次'}
         </button>
         {!round.duelWinner ? (
-          <button
-            type="button"
-            className="btn2"
-            style={{ background: round.dueled || othersLeft === 0 ? undefined : COLORS.yellow }}
-            onClick={() => setDueling(true)}
-            disabled={round.dueled || othersLeft === 0}
-          >
-            {round.dueled ? '對決過喇' : '⚔️ 唔服？對決'}
+          <button type="button" className="btn2" onClick={() => setDueling(true)} disabled={round.dueled || othersLeft === 0}>
+            <Icon name="swords" size={18} />
+            {round.dueled ? '對決過喇' : '唔服，對決'}
           </button>
         ) : (
           alt && (
@@ -137,7 +130,7 @@ export function Result() {
         )}
       </div>
       {!round.duelWinner && alt && (
-        <button type="button" className="btn2" onClick={alt.run}>
+        <button type="button" className="linkbtn" onClick={alt.run}>
           {alt.label}
         </button>
       )}
@@ -148,7 +141,7 @@ export function Result() {
       )}
 
       {adding && (
-        <Card label="加入片單" shadow={COLORS.yellow}>
+        <Card label="加入片單">
           <form
             className="field"
             onSubmit={(e) => {
@@ -180,14 +173,11 @@ export function Result() {
         </Card>
       )}
 
-      <p className="note light" style={{ margin: 0, textAlign: 'center' }}>
-        每輪得一次重轉，重轉會將今次結果移出呢一輪。唔服可以玩一次對決：贏家話事，就算用咗重轉都可以再轉。接受咗先會記入歷史同計冷卻期。
-      </p>
 
       {dueling && (
         <Duel
           stakes={`爭「${winner.option}」：贏家決定接受定重轉`}
-          doneLabel={(w) => `${names[w]} 話事 →`}
+          doneLabel={(w) => `${names[w]} 話事`}
           onCancel={() => setDueling(false)}
           onDone={(w) => {
             setRound((r) => ({ ...r, duelWinner: w, dueled: true, rerolled: false }));
@@ -196,5 +186,6 @@ export function Result() {
         />
       )}
     </div>
+    </>
   );
 }

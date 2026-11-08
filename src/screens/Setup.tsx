@@ -1,8 +1,11 @@
 import { useRef, useState } from 'react';
+import { Avatar } from '../components/Avatar';
+import { Icon } from '../components/icons';
 import { Mascot } from '../components/Mascot';
-import { Btn, Card, COLORS, initial } from '../components/ui';
+import { Btn, Card } from '../components/ui';
+import { ANIMAL_IMG, ANIMAL_KEYS, ANIMALS, PERSON_COLORS } from '../data/profiles';
 import { CATEGORY_LABEL, TAG_CHOICES, tagsFor } from '../data/rules';
-import type { Category } from '../engine/types';
+import type { Category, Person } from '../engine/types';
 import { useApp } from '../store/AppContext';
 import { sanitize } from '../store/storage';
 
@@ -20,9 +23,7 @@ function TagEditor({ category, option }: { category: Category; option: string })
   };
   return (
     <div className="tag-editor">
-      <div className="note" style={{ marginBottom: 6 }}>
-        「{option}」係點樣嘅？貼咗標籤，條件先會影響佢。
-      </div>
+      <div style={{ marginBottom: 8 }}>「{option}」係點樣嘅？</div>
       <div className="pills">
         {Object.entries(choices).map(([t, label]) => (
           <button key={t} type="button" className="pill sm" aria-pressed={current.includes(t)} onClick={() => toggle(t)}>
@@ -66,7 +67,7 @@ export function OptionEditor({ category, bare = false }: { category: Category; b
               {taggable ? (
                 <button type="button" className="chip-label" onClick={() => setEditing(editing === o ? null : o)}>
                   {o}
-                  <small>{n ? ` ·${n}` : ' ·＋'}</small>
+                  {n > 0 && <small> {n}</small>}
                 </button>
               ) : (
                 o
@@ -77,7 +78,7 @@ export function OptionEditor({ category, bare = false }: { category: Category; b
             </span>
           );
         })}
-        {list.length === 0 && <span className="note">仲未有選項</span>}
+        
       </div>
       {editing && list.includes(editing) && <TagEditor category={category} option={editing} />}
       <form
@@ -92,41 +93,63 @@ export function OptionEditor({ category, bare = false }: { category: Category; b
           value={draft}
           maxLength={MAX_LEN}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={category === 'eat' ? '新選項（例：樓下茶記）' : '新選項'}
+          placeholder="新選項"
           enterKeyHint="done"
         />
-        <button type="submit" className="btn2" style={{ flex: 'none' }}>
-          ＋ 加
+        <button type="submit" className="btn2" style={{ flex: 'none' }} aria-label="加選項">
+          <Icon name="plus" />
         </button>
       </form>
     </div>
   );
 }
 
-function Names() {
+export function PersonEditor({ p }: { p: Person }) {
   const { data, update } = useApp();
-  const setName = (p: 'A' | 'B', v: string) => update((d) => ({ ...d, users: { ...d.users, [p]: v.slice(0, 12) } }));
+  const prof = data.profiles[p];
+  const setName = (v: string) => update((d) => ({ ...d, users: { ...d.users, [p]: v.slice(0, 12) } }));
+  const setProf = (patch: Partial<typeof prof>) =>
+    update((d) => ({ ...d, profiles: { ...d.profiles, [p]: { ...d.profiles[p], ...patch } } }));
   return (
-    <>
-      {(['A', 'B'] as const).map((p, i) => (
-        <label key={p} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span className={`avatar ${p.toLowerCase()}`} style={{ width: 40, height: 40, fontSize: 14 }}>
-            {initial(data.users[p])}
-          </span>
-          <span style={{ flex: 1 }}>
-            <span className="note">{i === 0 ? '第一位' : '第二位'}</span>
-            <input
-              className="input"
-              style={{ width: '100%', marginTop: 4 }}
-              value={data.users[p]}
-              onChange={(e) => setName(p, e.target.value)}
-              placeholder="輸入名字"
-              autoComplete="off"
+    <div className="person-editor">
+      <div className="person-head">
+        <Avatar p={p} size={64} />
+        <input
+          className="input"
+          value={data.users[p]}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="名字"
+          aria-label="名字"
+          autoComplete="off"
+        />
+      </div>
+      <div>
+        <div className="section-title">顏色</div>
+        <div className="swatches" role="group" aria-label="顏色">
+          {PERSON_COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className="swatch-btn"
+              style={{ background: c }}
+              aria-label={c}
+              aria-pressed={prof.color === c}
+              onClick={() => setProf({ color: c })}
             />
-          </span>
-        </label>
-      ))}
-    </>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="section-title">動物</div>
+        <div className="animals" role="group" aria-label="動物">
+          {ANIMAL_KEYS.map((a) => (
+            <button key={a} type="button" className="animal-btn" aria-pressed={prof.animal === a} onClick={() => setProf({ animal: a })}>
+              {ANIMAL_IMG[a] ? <img src={ANIMAL_IMG[a]} alt={ANIMALS[a]} /> : ANIMALS[a]}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -163,15 +186,15 @@ function Backup() {
   return (
     <div className="settings-block">
       <div className="section-title">備份</div>
-      <span className="note">
-        資料只存喺呢部機。換手機、清瀏覽器資料之前，記得匯出一份；另一部機可以匯入同一份。
-      </span>
+      <span className="note">資料只存喺呢部機，換手機前記得匯出。</span>
       <div className="row">
         <button type="button" className="btn2" onClick={exportData}>
-          ⬇︎ 匯出備份
+          <Icon name="download" size={18} />
+          匯出
         </button>
         <button type="button" className="btn2" onClick={() => file.current?.click()}>
-          ⬆︎ 匯入備份
+          <Icon name="upload" size={18} />
+          匯入
         </button>
       </div>
       <input
@@ -190,7 +213,6 @@ function Reset() {
   const [armed, setArmed] = useState(false);
   return (
     <div className="settings-block">
-      <span className="note">重設會清走名字、選項、家務、歷史、分數同免做卡，回到全新狀態。</span>
       <button
         type="button"
         className={`btn2 danger ${armed ? 'armed' : ''}`}
@@ -203,88 +225,118 @@ function Reset() {
   );
 }
 
-/** First run: two short steps. */
+/** First run: hello, one page per person, then the options. */
 function FirstRun() {
   const { data, update, go } = useApp();
-  const [step, setStep] = useState<1 | 2>(1);
-  return (
-    <Card label={`首次設定・STEP ${step} / 2`}>
-      {step === 1 ? (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Mascot mood="wave" size={72} />
-            <div>
-              <h2 className="title">邊兩位一齊用？</h2>
-              <p className="sub" style={{ margin: 0 }}>
-                名可以隨時改。所有資料只會存喺呢部機。
-              </p>
-            </div>
-          </div>
-          <Names />
-          <Btn onClick={() => setStep(2)} disabled={!data.users.A.trim() || !data.users.B.trim()}>
-            下一步：設定選項 →
+  const [step, setStep] = useState(0);
+  const finish = () => {
+    update((d) => ({ ...d, setupDone: true }));
+    go('home');
+  };
+  if (step === 0)
+    return (
+      <div className="handoff" style={{ minHeight: '88dvh', justifyContent: 'center' }}>
+        <Mascot mood="wave" size={200} />
+        <h1 className="title">
+          今晚食乜、去邊、邊個洗碗
+          <br />
+          交俾我揀
+        </h1>
+        <Btn onClick={() => setStep(1)}>開始</Btn>
+      </div>
+    );
+  if (step === 1 || step === 2) {
+    const p: Person = step === 1 ? 'A' : 'B';
+    return (
+      <>
+        <h1 className="page-title">{step === 1 ? '你係邊個？' : '另一位係邊個？'}</h1>
+        <PersonEditor p={p} />
+        <div className="row">
+          <button type="button" className="btn2" style={{ flex: 'none' }} onClick={() => setStep(step - 1)} aria-label="上一步">
+            <Icon name="back" />
+          </button>
+          <Btn onClick={() => setStep(step + 1)} disabled={!data.users[p].trim()}>
+            下一步
           </Btn>
-        </>
-      ) : (
-        <>
-          <h2 className="title">每個轉盤有咩選擇？</h2>
-          <p className="sub">
-            撳 × 刪走，打字加新選項（例如你哋常去嗰間餐廳）。撳選項名可以貼標籤，例如「平・近・外賣」，咁條件就會影響佢。
-          </p>
-          {CATS.map((c) => (
-            <OptionEditor key={c} category={c} />
-          ))}
-          <div className="row">
-            <button type="button" className="btn2" style={{ flex: 'none' }} onClick={() => setStep(1)}>
-              ← 上一步
-            </button>
-            <Btn
-              onClick={() => {
-                update((d) => ({ ...d, setupDone: true }));
-                go('home');
-              }}
-            >
-              開始使用 →
-            </Btn>
-          </div>
-        </>
-      )}
-    </Card>
+        </div>
+      </>
+    );
+  }
+  return (
+    <>
+      <h1 className="page-title">平時會爭啲咩？</h1>
+      {CATS.map((c) => (
+        <Card key={c} label={CATEGORY_LABEL[c]}>
+          <OptionEditor category={c} bare />
+        </Card>
+      ))}
+      <div className="row">
+        <button type="button" className="btn2" style={{ flex: 'none' }} onClick={() => setStep(2)} aria-label="上一步">
+          <Icon name="back" />
+        </button>
+        <Btn onClick={finish}>開始使用</Btn>
+      </div>
+    </>
   );
 }
 
-/** Later visits: everything on one scrollable page. */
+/** 我哋: the couple, their avatars, options and data. */
 function Settings() {
-  const { go, data } = useApp();
+  const { data, names } = useApp();
+  const picks = data.history.filter((h) => h.kind === 'pick').length;
+  const chores = data.history.filter((h) => h.kind === 'chore').length;
   return (
     <>
-      <Card label="設定・名字" shadow={COLORS.green}>
-        <Names />
-      </Card>
-      <Card label="設定・轉盤選項" shadow={COLORS.yellow}>
-        <p className="sub" style={{ margin: 0 }}>
-          撳選項名貼標籤（·數字 = 已貼幾多個）。冇標籤嘅選項唔受條件影響，只受投票、冷卻期同評分影響。
-        </p>
+      <div className="handoff" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 32px)', paddingBottom: 0, gap: 12 }}>
+        <div style={{ display: 'flex' }}>
+          <Avatar p="A" size={72} />
+          <span style={{ marginLeft: -14, borderRadius: '50%', boxShadow: '0 0 0 4px var(--paper)', display: 'inline-flex' }}>
+            <Avatar p="B" size={72} />
+          </span>
+        </div>
+        <h1 className="title">
+          {names.A} 同 {names.B}
+        </h1>
+      </div>
+      <div className="stat-row">
+        <div>
+          <b>{picks}</b>
+          <span>次決定</span>
+        </div>
+        <div>
+          <b>{chores}</b>
+          <span>次家務</span>
+        </div>
+        <div>
+          <b>{data.watchlist.length}</b>
+          <span>套想睇</span>
+        </div>
+      </div>
+      {(['A', 'B'] as const).map((p) => (
+        <Card key={p} label={names[p]}>
+          <PersonEditor p={p} />
+        </Card>
+      ))}
+      <Card label="轉盤選項">
         {CATS.map((c) => (
           <OptionEditor key={c} category={c} />
         ))}
       </Card>
-      <Card label="設定・資料" shadow={COLORS.pink}>
+      <Card label="資料">
         <Backup />
         <Reset />
       </Card>
-      <Btn onClick={() => go('home')} disabled={!data.users.A.trim() || !data.users.B.trim()}>
-        完成
-      </Btn>
+      <p className="credit">
+        吉祥物 by{' '}
+        <a href="https://sipp.com.hk" target="_blank" rel="noopener noreferrer">
+          sipp.
+        </a>
+      </p>
     </>
   );
 }
 
 export function Setup() {
   const { data } = useApp();
-  return (
-    <div className="narrow" style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
-      {data.setupDone ? <Settings /> : <FirstRun />}
-    </div>
-  );
+  return <div className="narrow">{data.setupDone ? <Settings /> : <FirstRun />}</div>;
 }
