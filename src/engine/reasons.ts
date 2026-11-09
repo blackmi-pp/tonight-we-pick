@@ -39,8 +39,8 @@ export function buildReasons(args: {
   if (votes) {
     const a = votes.A[winner.option];
     const b = votes.B[winner.option];
-    if (a === 'love' && b === 'love') out.push(`${names.A} 同 ${names.B} 都投咗「特別想」`);
-    else if (a === 'love' || b === 'love') out.push(`${a === 'love' ? names.A : names.B} 投咗「特別想」`);
+    if (a === 'love' && b === 'love') out.push(`${names.A} 同 ${names.B} 都投咗「好想」`);
+    else if (a === 'love' || b === 'love') out.push(`${a === 'love' ? names.A : names.B} 投咗「好想」`);
     else if (a && b) out.push('兩個人都接受呢個選項');
     else if (a || b) out.push(`${a ? names.A : names.B} 有投票，另一位冇反對`);
     else out.push('兩個都冇投票，亦冇人否決');

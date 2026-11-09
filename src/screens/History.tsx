@@ -1,23 +1,15 @@
 import { Mascot } from '../components/Mascot';
-import { Card, COLORS } from '../components/ui';
+import { Card } from '../components/ui';
 import { CATEGORY_LABEL, CATEGORY_TAG, RULES } from '../data/rules';
+import { compromiseBoost, ledger } from '../engine/fairness';
 import { relDay } from '../engine/time';
 import type { Category, HistoryEntry } from '../engine/types';
 import { useApp } from '../store/AppContext';
 
-const TAG_COLOR: Record<string, string> = {
-  食乜: COLORS.yellow,
-  去邊: COLORS.green,
-  睇乜: COLORS.teal,
-  自訂: COLORS.orange,
-  家務: COLORS.pink,
-  免做卡: '#c78bde',
-};
-
 function describe(h: HistoryEntry, names: Record<'A' | 'B', string>): { tag: string; what: string } {
   switch (h.kind) {
     case 'pick':
-      return { tag: CATEGORY_TAG[h.category], what: h.option + (h.rating === 'up' ? ' 👍' : h.rating === 'down' ? ' 👎' : '') };
+      return { tag: CATEGORY_TAG[h.category], what: h.option + (h.rating === 'up' ? '・好' : h.rating === 'down' ? '・唔好' : '') };
     case 'chore':
       return {
         tag: '家務',
@@ -37,20 +29,61 @@ function cooldownSummary(cat: Category, options: string[]): string | null {
   return `${CATEGORY_LABEL[cat]}：${[...special, base].join('・')}${gap}`;
 }
 
+const CAT_ORDER: Category[] = ['eat', 'go', 'watch', 'custom'];
+
 export function History() {
   const { data, names, removeHistory, update } = useApp();
   const now = Date.now();
   const summaries = (['eat', 'go', 'watch'] as const)
     .map((c) => cooldownSummary(c, data.options[c]))
     .filter((s): s is string => !!s);
+  const l = ledger(data.history, now);
+  const boost = compromiseBoost(l);
+  const counts = CAT_ORDER.map((c) => ({ c, n: data.history.filter((h) => h.kind === 'pick' && h.category === c).length }));
+  const max = Math.max(1, ...counts.map((x) => x.n));
 
   return (
-    <div className="narrow" style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
-      <Card label="決定歷史" shadow={COLORS.green}>
+    <div className="narrow">
+      <h1 className="page-title">紀錄</h1>
+
+      {l.n > 0 && (
+        <Card>
+          <div className="ledger">
+            <Mascot mood={boost ? 'sideEye' : 'idle'} size={72} />
+            <p>
+              {boost
+                ? `${names[boost.who]} 最近遷就多咗，下次投票佢嘅票會加成`
+                : `最近 ${l.n} 次決定，兩個人差唔多開心`}
+            </p>
+          </div>
+        </Card>
+      )}
+
+      {counts.some((x) => x.n > 0) && (
+        <div>
+          <div className="section-title">邊樣最常爭</div>
+          <div className="cat-bars">
+            {counts.map(({ c, n }) => (
+              <div key={c}>
+                <div className="top">
+                  <span>{CATEGORY_LABEL[c]}</span>
+                  <span>{n} 次</span>
+                </div>
+                <div className="bar" style={{ height: 6 }}>
+                  <i style={{ width: `${(n / max) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <div className="section-title">最近</div>
         {data.history.length === 0 ? (
           <div className="handoff">
-            <Mascot mood="think" size={90} />
-            <span className="note">仲未有紀錄・接受第一個結果之後就會記喺度</span>
+            <Mascot mood="think" size={110} />
+            <span className="sub">未有紀錄</span>
           </div>
         ) : (
           <div className="list">
@@ -58,9 +91,7 @@ export function History() {
               const d = describe(h, names);
               return (
                 <div key={h.id} className="li">
-                  <span className="tag" style={{ '--tagc': TAG_COLOR[d.tag] } as React.CSSProperties}>
-                    {d.tag}
-                  </span>
+                  <span className="tag">{d.tag}</span>
                   <span className="grow">{d.what}</span>
                   <span className="meta">{relDay(h.ts, now)}</span>
                   <button type="button" className="x" aria-label="刪走呢條紀錄" onClick={() => removeHistory(h.id)}>
@@ -71,21 +102,26 @@ export function History() {
             })}
           </div>
         )}
-        <div className="note" style={{ borderTop: '2px dashed rgba(28,26,23,.15)', paddingTop: 12 }}>
-          <b>冷卻期</b>（期內只係降低機率，唔係禁止；由接受結果嗰日起計）
-          <br />
-          {summaries.map((s) => (
-            <span key={s}>
-              {s}
+        {summaries.length > 0 && (
+          <details className="explain" style={{ marginTop: 12 }}>
+            <summary>冷卻期點計？</summary>
+            <p className="note">
+              期內只係降低機率，唔係禁止，由接受結果嗰日起計。
               <br />
-            </span>
-          ))}
-          記錯咗可以撳 × 刪走，冷卻期同家務分會即刻跟住改。
-        </div>
-      </Card>
-      <Card label="片單" shadow={COLORS.yellow}>
+              {summaries.map((s) => (
+                <span key={s}>
+                  {s}
+                  <br />
+                </span>
+              ))}
+            </p>
+          </details>
+        )}
+      </div>
+
+      <Card label="想睇">
         {data.watchlist.length === 0 ? (
-          <span className="note">「今晚睇乜」出結果嗰陣可以將想睇嘅戲加落嚟。</span>
+          <span className="sub">未有</span>
         ) : (
           <div className="list">
             {data.watchlist.map((w) => (

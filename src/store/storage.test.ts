@@ -30,6 +30,16 @@ describe('storage', () => {
     expect(s.history).toEqual([]);
   });
 
+  it('keeps valid profiles and repairs broken ones', () => {
+    const s = sanitize({
+      profiles: { A: { color: '#9b7ede', animal: 'koala' }, B: { color: 'red', animal: 'dragon' } },
+    });
+    expect(s.profiles.A).toEqual({ color: '#9b7ede', animal: 'koala' });
+    expect(s.profiles.B).toEqual(freshState().profiles.B);
+    // Data saved before profiles existed still loads.
+    expect(sanitize({ users: { A: 'Bo', B: 'Kit' } }).profiles).toEqual(freshState().profiles);
+  });
+
   it('imports the old jdw-* data', () => {
     const old = mem({
       'jdw-setup': JSON.stringify({ users: { A: 'Bo', B: 'Kit' }, options: { eat: ['火鍋'], go: [], watch: [], custom: [] } }),

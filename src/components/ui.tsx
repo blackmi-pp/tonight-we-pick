@@ -1,45 +1,40 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
+/** Studio palette (mirrors the CSS tokens) for places that need colours in JS, like SVG. */
 export const COLORS = {
-  ink: '#1c1a17',
-  cream: '#f4eeda',
-  yellow: '#ffd23f',
-  pink: '#f2467f',
-  green: '#a8d84b',
-  teal: '#7fc8bd',
-  orange: '#f2865e',
+  ink: '#1e2226',
+  paper: '#fbfbfa',
+  surface: '#eef0f1',
+  wall: '#b9c5cd',
+  mute: '#79828a',
 };
 
 export function Card({
   label,
   right,
-  shadow = COLORS.pink,
-  tab = COLORS.yellow,
   children,
   className = '',
   bodyClass = 'card-body',
 }: {
   label?: ReactNode;
   right?: ReactNode;
+  /** @deprecated kept so older call sites compile; cards no longer have coloured shadows. */
   shadow?: string;
+  /** @deprecated see `shadow`. */
   tab?: string;
   children: ReactNode;
   className?: string;
   bodyClass?: string;
 }) {
   return (
-    <section className={`card ${className}`} style={{ '--shadow': shadow, '--tab': tab } as CSSProperties}>
-      <div className="card-in">
-        {label !== undefined && (
-          <div className="tab">
-            <span className="dot" style={{ background: COLORS.pink }} />
-            <span className="dot" style={{ background: COLORS.green }} />
-            <span className="label">{label}</span>
-            {right !== undefined && <span className="right">{right}</span>}
-          </div>
-        )}
-        <div className={bodyClass}>{children}</div>
-      </div>
+    <section className={`card ${className}`}>
+      {label !== undefined && (
+        <h3 className="card-label">
+          <span>{label}</span>
+          {right !== undefined && <span>{right}</span>}
+        </h3>
+      )}
+      <div className={bodyClass}>{children}</div>
     </section>
   );
 }

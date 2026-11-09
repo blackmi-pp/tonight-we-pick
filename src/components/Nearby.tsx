@@ -1,6 +1,7 @@
+import { Icon } from './icons';
 import { useState } from 'react';
 import { distanceLabel, embedSrc, mapsLink, myLocation, nearby, type LatLon, type Place } from '../services/places';
-import { COLORS, Card } from './ui';
+import { Card } from './ui';
 
 type State =
   | { s: 'idle' }
@@ -35,30 +36,28 @@ export function Nearby({ option, verb }: { option: string; verb: string }) {
   };
 
   return (
-    <Card label={`附近邊度${verb}「${option}」`} shadow={COLORS.yellow}>
+    <Card label={`附近邊度${verb}「${option}」`}>
       {st.s === 'idle' && (
         <>
-          <p className="note" style={{ margin: 0 }}>
-            用你而家嘅位置，喺 OpenStreetMap 搵附近嘅地方。位置只用一次，唔會儲低。
-          </p>
           <div className="row">
-            <button type="button" className="btn2" style={{ background: COLORS.yellow }} onClick={() => void load()}>
-              📍 搵附近
+            <button type="button" className="btn2 accent" onClick={() => void load()}>
+              <Icon name="pin" size={18} />
+              搵附近
             </button>
             <a className="btn2" href={mapsLink(option)} target="_blank" rel="noopener noreferrer">
-              🗺️ 開地圖搜尋
+              開地圖
             </a>
           </div>
         </>
       )}
-      {st.s === 'loading' && <div className="empty">搵緊附近……</div>}
+      {st.s === 'loading' && <div className="empty">搵緊…</div>}
       {st.s === 'error' && (
         <>
           <p className="note" style={{ margin: 0 }}>
             {st.msg}
           </p>
           <a className="btn2" href={mapsLink(option)} target="_blank" rel="noopener noreferrer">
-            🗺️ 開地圖搜尋「{option}」
+            開地圖搜尋「{option}」
           </a>
         </>
       )}
@@ -66,7 +65,7 @@ export function Nearby({ option, verb }: { option: string; verb: string }) {
         <>
           {st.places.length === 0 ? (
             <p className="note" style={{ margin: 0 }}>
-              OpenStreetMap 喺附近搵唔到「{option}」（佢嘅資料唔係樣樣齊）。
+              附近搵唔到「{option}」
             </p>
           ) : (
             <>
@@ -95,7 +94,7 @@ export function Nearby({ option, verb }: { option: string; verb: string }) {
             </>
           )}
           <a className="btn2" href={mapsLink(option, st.at)} target="_blank" rel="noopener noreferrer">
-            🗺️ 喺地圖睇更多
+            喺地圖睇更多
           </a>
           <p className="note" style={{ margin: 0 }}>
             地點資料 © OpenStreetMap contributors

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Confetti } from '../components/Confetti';
 import { Mascot } from '../components/Mascot';
-import { Btn, Card, COLORS } from '../components/ui';
+import { EarCard } from '../components/EarCard';
+import { Icon } from '../components/icons';
+import { Btn } from '../components/ui';
 import {
   bestOf,
   HAND_LABEL,
@@ -17,13 +19,12 @@ import { useApp } from '../store/AppContext';
 
 type Game = 'rps' | 'tap' | 'stop';
 
-const GAMES: { key: Game; emoji: string; name: string; desc: string; color: string }[] = [
-  { key: 'rps', emoji: '✊', name: '包剪揼', desc: '三局兩勝・輪流秘密出', color: COLORS.yellow },
-  { key: 'tap', emoji: '👆', name: '撳快啲', desc: '8 秒內邊個撳得多', color: COLORS.pink },
-  { key: 'stop', emoji: '⏱️', name: '停錶挑戰', desc: '盲停最接近 5.00 秒', color: COLORS.green },
+const GAMES: { key: Game; name: string; desc: string }[] = [
+  { key: 'rps', name: '包剪揼', desc: '三局兩勝' },
+  { key: 'tap', name: '撳快啲', desc: '8 秒' },
+  { key: 'stop', name: '停錶挑戰', desc: '盲停 5 秒' },
 ];
 
-const other = (p: Person): Person => (p === 'A' ? 'B' : 'A');
 
 /* ───────── 包剪揼 ───────── */
 function Rps({ onWin }: { onWin: (p: Person) => void }) {
@@ -95,7 +96,7 @@ function Rps({ onWin }: { onWin: (p: Person) => void }) {
         <div className="handoff">
           <Mascot mood="please" size={90} />
           <h3 className="game-title">交畀 {names.B}</h3>
-          <Btn onClick={() => setTurn('B')}>我係 {names.B}，到我 →</Btn>
+          <Btn onClick={() => setTurn('B')}>我係 {names.B}，到我 </Btn>
         </div>
       )}
       {turn === 'reveal' && (
@@ -111,7 +112,7 @@ function Rps({ onWin }: { onWin: (p: Person) => void }) {
           <h3 className="game-title">
             {!revealed ? ['', '包！', '剪！', '揼！'][shake] : roundWinner === null ? '打和！再嚟' : `${names[roundWinner!]} 贏呢局`}
           </h3>
-          {revealed && <Btn onClick={next}>{champion ? `${names[champion]} 勝出 →` : '下一局 →'}</Btn>}
+          {revealed && <Btn onClick={next}>{champion ? `${names[champion]} 勝出` : '下一局'}</Btn>}
         </div>
       )}
     </div>
@@ -121,7 +122,7 @@ function Rps({ onWin }: { onWin: (p: Person) => void }) {
 /* ───────── 撳快啲 ───────── */
 const TAP_SECONDS = 8;
 function TapRace({ onWin }: { onWin: (p: Person) => void }) {
-  const { names } = useApp();
+  const { names, data } = useApp();
   const [phase, setPhase] = useState<'ready' | 'count' | 'go' | 'done'>('ready');
   const [count, setCount] = useState(3);
   const [left, setLeft] = useState(TAP_SECONDS);
@@ -157,7 +158,7 @@ function TapRace({ onWin }: { onWin: (p: Person) => void }) {
       {phase === 'ready' && (
         <div className="handoff">
           <p className="note" style={{ margin: 0 }}>
-            兩個人一齊拎住部手機，{names.A} 撳左邊，{names.B} 撳右邊。{TAP_SECONDS} 秒內撳得多嘅贏。
+            {names.A} 撳左邊，{names.B} 撳右邊，{TAP_SECONDS} 秒內撳得多嘅贏
           </p>
           <Btn
             onClick={() => {
@@ -167,7 +168,7 @@ function TapRace({ onWin }: { onWin: (p: Person) => void }) {
               setPhase('count');
             }}
           >
-            準備好，開始！
+            開始
           </Btn>
         </div>
       )}
@@ -179,7 +180,8 @@ function TapRace({ onWin }: { onWin: (p: Person) => void }) {
               <button
                 key={p}
                 type="button"
-                className={`tap-zone ${p.toLowerCase()}`}
+                className="tap-zone"
+                style={{ background: data.profiles[p].color }}
                 onPointerDown={tap(p)}
                 onContextMenu={(e) => e.preventDefault()}
               >
@@ -196,7 +198,7 @@ function TapRace({ onWin }: { onWin: (p: Person) => void }) {
             {names.A} {taps.A} 下 vs {names.B} {taps.B} 下
           </h3>
           {winner ? (
-            <Btn onClick={() => onWin(winner)}>{names[winner]} 勝出 →</Btn>
+            <Btn onClick={() => onWin(winner)}>{names[winner]} 勝出 </Btn>
           ) : (
             <Btn onClick={() => setPhase('ready')}>打和！再嚟</Btn>
           )}
@@ -253,7 +255,7 @@ function StopWatch({ onWin }: { onWin: (p: Person) => void }) {
         <>
           <h3 className="game-title">輪到 {names[who]}</h3>
           <p className="note" style={{ textAlign: 'center', margin: 0 }}>
-            撳開始，心入面數到 {fmt(STOP_TARGET_MS)} 秒再撳停。頭 {VISIBLE_MS / 1000} 秒睇到時間，之後要靠感覺。
+            心入面數到 {fmt(STOP_TARGET_MS)} 秒再撳停
           </p>
           <div className="stopwatch">{phase === 'running' && now > VISIBLE_MS ? '?.??' : fmt(now)}</div>
           <Btn color={phase === 'running' ? 'yellow' : 'pink'} onClick={press}>
@@ -265,16 +267,13 @@ function StopWatch({ onWin }: { onWin: (p: Person) => void }) {
         <div className="handoff">
           <Mascot mood="please" size={90} />
           <h3 className="game-title">{names.A} 停咗喇，交畀 {names.B}</h3>
-          <p className="note" style={{ margin: 0 }}>
-            {names.A} 嘅時間收埋咗，最後先揭曉。
-          </p>
           <Btn
             onClick={() => {
               setWho('B');
               setPhase('ready');
             }}
           >
-            我係 {names.B}，到我 →
+            我係 {names.B}，到我
           </Btn>
         </div>
       )}
@@ -291,7 +290,7 @@ function StopWatch({ onWin }: { onWin: (p: Person) => void }) {
             ))}
           </div>
           {winner ? (
-            <Btn onClick={() => onWin(winner)}>{names[winner]} 勝出 →</Btn>
+            <Btn onClick={() => onWin(winner)}>{names[winner]} 勝出 </Btn>
           ) : (
             <Btn
               onClick={() => {
@@ -337,56 +336,51 @@ export function Duel({ stakes, onDone, onCancel, doneLabel }: DuelProps) {
     <div className="duel-overlay" role="dialog" aria-modal="true" aria-label="對決">
       <div className="narrow" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div className="duel-head">
-          <button type="button" className="hbtn" onClick={onCancel} aria-label="取消對決">
-            ✕
+          <button type="button" className="iconbtn" onClick={onCancel} aria-label="取消對決">
+            <Icon name="close" />
           </button>
-          <div>
-            <div className="duel-title">⚔️ 對決</div>
-            <div className="note light">{stakes}</div>
-          </div>
+        </div>
+        <div>
+          <div className="duel-title">對決</div>
+          <div className="sub">{stakes}</div>
         </div>
 
         {winner ? (
-          <Card label="對決結果" shadow={COLORS.green} bodyClass="">
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Confetti />
             <div className="verdict">
-              <Mascot mood="jump" once size={92} />
-              <div className="kicker">勝出者</div>
-              <div className="what">
-                <span>{names[winner]}</span>
-              </div>
-              <p className="note">{names[other(winner)]} 願賭服輸 🙏</p>
+              <Mascot mood="jump" once size={120} />
+              <div className="kicker">贏咗嘅係</div>
+              <div className="what">{names[winner]}</div>
             </div>
-            <div style={{ padding: '0 16px 18px' }}>
-              <Btn onClick={() => onDone(winner)}>{doneLabel ? doneLabel(winner) : '好，照做'}</Btn>
-            </div>
-          </Card>
+            <Btn onClick={() => onDone(winner)}>{doneLabel ? doneLabel(winner) : '好，照做'}</Btn>
+          </div>
         ) : !game ? (
-          <Card label="揀個遊戲" shadow={COLORS.yellow}>
+          <>
             <div className="game-list">
               {GAMES.map((g) => (
-                <button key={g.key} type="button" className="game-pick" style={{ background: g.color }} onClick={() => setGame(g.key)}>
-                  <span className="emoji">{g.emoji}</span>
-                  <span>
-                    <b>{g.name}</b>
-                    <small>{g.desc}</small>
+                <EarCard key={g.key} as="button" onClick={() => setGame(g.key)}>
+                  <span className="game-pick">
+                    <span>{g.name}</span>
+                    <span className="sub">{g.desc}</span>
                   </span>
-                </button>
+                </EarCard>
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <Mascot mood="grumpy" size={80} />
+              <Mascot mood="grumpy" size={96} />
             </div>
-          </Card>
+          </>
         ) : (
-          <Card label={GAMES.find((g) => g.key === game)!.name} shadow={COLORS.pink}>
+          <>
+            <h2 className="title">{GAMES.find((g) => g.key === game)!.name}</h2>
             {game === 'rps' && <Rps onWin={setWinner} />}
             {game === 'tap' && <TapRace onWin={setWinner} />}
             {game === 'stop' && <StopWatch onWin={setWinner} />}
             <button type="button" className="linkbtn" onClick={() => setGame(null)}>
-              ← 換第二個遊戲
+              換第二個遊戲
             </button>
-          </Card>
+          </>
         )}
       </div>
     </div>

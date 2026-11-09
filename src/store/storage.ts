@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILES, sanitizeProfile, type Profile } from '../data/profiles';
 import { DEFAULT_CHORES, DEFAULT_OPTIONS, type UserTags } from '../data/rules';
 import type { Category, Chore, HistoryEntry, Person } from '../engine/types';
 
@@ -8,6 +9,8 @@ export interface SavedState {
   version: 1;
   setupDone: boolean;
   users: Record<Person, string>;
+  /** Each person's colour and animal avatar. */
+  profiles: Record<Person, Profile>;
   options: Record<Category, string[]>;
   chores: Chore[];
   history: HistoryEntry[];
@@ -21,6 +24,7 @@ export function freshState(): SavedState {
     version: 1,
     setupDone: false,
     users: { A: '', B: '' },
+    profiles: structuredClone(DEFAULT_PROFILES),
     options: structuredClone(DEFAULT_OPTIONS),
     chores: structuredClone(DEFAULT_CHORES),
     history: [],
@@ -70,6 +74,10 @@ export function sanitize(raw: unknown): SavedState {
     users: {
       A: typeof users.A === 'string' ? users.A : '',
       B: typeof users.B === 'string' ? users.B : '',
+    },
+    profiles: {
+      A: sanitizeProfile(isObj(raw.profiles) ? raw.profiles.A : undefined, DEFAULT_PROFILES.A),
+      B: sanitizeProfile(isObj(raw.profiles) ? raw.profiles.B : undefined, DEFAULT_PROFILES.B),
     },
     options: Object.fromEntries(CATS.map((c) => [c, strArr(options[c]) ?? base.options[c]])) as SavedState['options'],
     chores: Array.isArray(raw.chores)

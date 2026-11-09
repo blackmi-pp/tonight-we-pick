@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Mascot } from '../components/Mascot';
-import { Card, COLORS, Pills } from '../components/ui';
+import { FlowBar } from '../components/Nav';
+import { Pills } from '../components/ui';
 import { useApp } from '../store/AppContext';
 
 type Q = { k: 'q1' | 'q2' | 'q3'; title: string; opts: [string, string] };
 const QS: Q[] = [
-  { k: 'q1', title: '1・出街還是留家？', opts: ['出街', '留家'] },
-  { k: 'q2', title: '2・平價還是正常預算？', opts: ['平價', '正常'] },
-  { k: 'q3', title: '3・想輕鬆還是想有新鮮感？', opts: ['輕鬆', '新鮮感'] },
+  { k: 'q1', title: '出街定留家？', opts: ['出街', '留家'] },
+  { k: 'q2', title: '平價定正常？', opts: ['平價', '正常'] },
+  { k: 'q3', title: '輕鬆定新鮮？', opts: ['輕鬆', '新鮮感'] },
 ];
 
 export function plansFor(a: Record<Q['k'], string | undefined>): [string, string][] {
@@ -44,13 +45,14 @@ export function Lazy() {
   const plan = plans[n % plans.length]!;
 
   return (
-    <div className="narrow">
-      <Card label="無力決定模式・淨係答三條" shadow={COLORS.pink}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <>
+      <FlowBar title="唔想諗" />
+      <div className="narrow">
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
           <h2 className="title" style={{ flex: 1 }}>
-            我哋今日唔想揀
+            答三條，我幫你揀
           </h2>
-          <Mascot mood="sleepy" size={70} />
+          <Mascot mood="sleepy" size={84} />
         </div>
         {QS.map((q) => (
           <div key={q.k}>
@@ -59,17 +61,16 @@ export function Lazy() {
           </div>
         ))}
         {ready && (
-          <div className="plan">
-            <span className="note" style={{ fontWeight: 700 }}>
-              完整建議
-            </span>
+          <div className="plan" style={{ background: 'var(--surface)' }}>
             <h3>{plan[0]}</h3>
-            <span className="note">{plan[1]}</span>
+            <span className="sub">{plan[1]}</span>
             <div className="row">
+              <button type="button" className="btn2" onClick={() => setN(n + 1)}>
+                換一個
+              </button>
               <button
                 type="button"
-                className="btn2"
-                style={{ background: COLORS.pink, color: '#fff' }}
+                className="btn2 accent"
                 onClick={() => {
                   toast(`今日計劃：${plan[0]}`);
                   go('home');
@@ -77,13 +78,10 @@ export function Lazy() {
               >
                 就咁決定
               </button>
-              <button type="button" className="btn2" onClick={() => setN(n + 1)}>
-                換一個建議
-              </button>
             </div>
           </div>
         )}
-      </Card>
-    </div>
+      </div>
+    </>
   );
 }
